@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +13,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -26,9 +27,11 @@ public class GitTool {
     private static final Pattern SAFE_BRANCH = Pattern.compile("[A-Za-z0-9._/-]+");
 
     private final String expectedToken;
+    private final String githubPat;
 
-    public GitTool(String expectedToken) {
+    public GitTool(String expectedToken, String githubPat) {
         this.expectedToken = expectedToken;
+        this.githubPat = githubPat;
     }
 
     @Tool(description = "Pubblica su origin i commit locali non ancora pushati, sul branch corrente. " +
@@ -71,7 +74,7 @@ public class GitTool {
             }
 
             log.info("git-tool: push confermato su origin/{}, commit:\n{}", branch, pending);
-            String out = runGit("push", "origin", branch);
+            String out = runGit(pushAuthEnv(), "push", "origin", branch);
             log.info("git-tool: push completato su origin/{}", branch);
             return out.isBlank() ? "Push completato." : out;
         } catch (Exception e) {
@@ -81,7 +84,25 @@ public class GitTool {
         }
     }
 
+    // Se app.github.pat è configurato, il push usa quel PAT invece delle credenziali salvate nel sistema.
+    // Il token passa solo come variabile d'ambiente del processo: non finisce negli argomenti né nei log.
+    private Map<String, String> pushAuthEnv() {
+        if (githubPat == null || githubPat.isBlank()) {
+            return Map.of();
+        }
+        String basic = Base64.getEncoder()
+                .encodeToString(("x-access-token:" + githubPat).getBytes(StandardCharsets.UTF_8));
+        return Map.of(
+                "GIT_CONFIG_COUNT", "1",
+                "GIT_CONFIG_KEY_0", "http.https://github.com/.extraHeader",
+                "GIT_CONFIG_VALUE_0", "Authorization: Basic " + basic);
+    }
+
     private String runGit(String... args) throws IOException, InterruptedException {
+        return runGit(Map.of(), args);
+    }
+
+    private String runGit(Map<String, String> extraEnv, String... args) throws IOException, InterruptedException {
         List<String> cmd = new ArrayList<>();
         cmd.add("git");
         cmd.addAll(List.of(args));
@@ -95,6 +116,7 @@ public class GitTool {
                     .redirectErrorStream(true)
                     .redirectOutput(outFile);
             pb.environment().put("GIT_TERMINAL_PROMPT", "0");
+            pb.environment().putAll(extraEnv);
 
             Process p = pb.start();
             log.info("git-tool: avvio 'git {}' (cwd={})", String.join(" ", args), pb.directory());
