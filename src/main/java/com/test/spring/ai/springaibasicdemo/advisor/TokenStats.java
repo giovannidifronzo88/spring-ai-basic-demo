@@ -10,6 +10,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 public class TokenStats implements CallAdvisor {
     private static final Logger logger = LoggerFactory.getLogger(TokenStats.class);
 
+    // Advisor rudimentale che calcola il numero di token stimati nella richiesta e logga le informazioni sui token utilizzati nella risposta.
     @Override
     public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
         int tokens = chatClientRequest.prompt()

@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Profile;
 @Profile("git-tool")
 public class GitToolConfiguration {
 
-    // Espone solo gitPushIfNeeded all'LLM, ed è attivo solo con il profilo "git-tool".
-    // Il token atteso viene da app.git.tool.token (application.properties, a sua volta da APP_GIT_TOOL_TOKEN) e viene verificato dentro il tool, non nel controller.
+    // Espone al modello i tool git (push, creazione branch, merge), attivi solo con il profilo "git-tool".
+    // Il token atteso viene da app.git.tool.token (da APP_GIT_TOOL_TOKEN) e viene verificato da GitAccessGuard al momento della chiamata.
     @Bean
     public GitTool gitTool(@Value("${app.git.tool.token:}") String expectedToken,
                            @Value("${app.github.pat:}") String githubPat) {
