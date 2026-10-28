@@ -16,7 +16,7 @@ public class ToolController {
     }
 
     @GetMapping("/time")
-    public String tool(@RequestParam("prompt") String prompt, @RequestHeader(value = "chatId", required = false) String chatId) {
+    public String answerDateTimeQuestion(@RequestParam("prompt") String prompt, @RequestHeader(value = "chatId", required = false) String chatId) {
 
         return chatClient.prompt()
                 .user(prompt)

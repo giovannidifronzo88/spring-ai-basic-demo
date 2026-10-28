@@ -38,7 +38,7 @@ public class RagController {
     }
 
     @GetMapping("/qdrant")
-    public String testQdrant() {
+    public String qdrantConnectionStatus() {
         try {
             // Proviamo a salvare un documento fittizio temporaneo
             Document docTest = new Document(java.util.UUID.randomUUID().toString(), "Test di connessione Spring AI", java.util.Map.of());

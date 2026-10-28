@@ -33,16 +33,16 @@ public class BaseDocumentIngestionService  {
     public void ingest(InputStream inputStream) throws IOException {
 
         List<Document> documents = new ArrayList<>();
+        CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
+                .setHeader()
+                .setSkipHeaderRecord(true)
+                .get();
 
         try (
                 Reader reader = new InputStreamReader(
                         inputStream, StandardCharsets.UTF_8
                 );
-                CSVParser parser = CSVFormat.DEFAULT.builder()
-                            .setHeader()
-                            .setSkipHeaderRecord(true)
-                            .get()
-                            .parse(reader)
+                CSVParser parser = csvFormat.parse(reader)
         ) {
             for (CSVRecord record : parser) {
                 String source = record.get("source");

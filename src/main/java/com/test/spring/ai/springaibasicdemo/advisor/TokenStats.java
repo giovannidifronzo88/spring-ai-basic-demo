@@ -8,7 +8,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 
 public class TokenStats implements CallAdvisor {
-    private static final Logger logger = LoggerFactory.getLogger(TokenStats.class);
+    private static final Logger log = LoggerFactory.getLogger(TokenStats.class);
 
     // Advisor rudimentale che calcola il numero di token stimati nella richiesta e logga le informazioni sui token utilizzati nella risposta.
     @Override
@@ -18,10 +18,10 @@ public class TokenStats implements CallAdvisor {
                 .stream()
                 .mapToInt(i -> i.getText()!=null? i.getText().length():0)
                 .sum()/4;
-        logger.info("TokenStats: estimation of tokens used in request: " + tokens);
+        log.info("TokenStats: estimation of tokens used in request: {}", tokens);
 
         ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(chatClientRequest);
-        logger.info("TokenStats: Tokens according to the metadata: " + chatClientResponse.chatResponse().getMetadata().toString());
+        log.info("TokenStats: Tokens according to the metadata: {}", chatClientResponse.chatResponse().getMetadata());
 
         return chatClientResponse;
     }

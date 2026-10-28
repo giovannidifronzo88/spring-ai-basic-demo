@@ -14,8 +14,6 @@ class GitApprovalStore {
 
     private final Map<String, PendingApproval> approvals = new ConcurrentHashMap<>();
 
-    private record PendingApproval(String id, String operation, Instant expiresAt) {}
-
     synchronized void create(String chatId, String operation) {
         approvals.put(chatId, new PendingApproval(UUID.randomUUID().toString(), operation,
                 Instant.now().plus(TTL)));

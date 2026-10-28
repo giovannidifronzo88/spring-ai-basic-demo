@@ -1,5 +1,6 @@
 package com.test.spring.ai.springaibasicdemo.configuration;
 
+import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
@@ -30,7 +31,7 @@ public class QdrantConfiguration {
             channelBuilder.usePlaintext();
         }
 
-        var channel = channelBuilder.build();
+        ManagedChannel channel = channelBuilder.build();
 
 
         QdrantGrpcClient.Builder builder = QdrantGrpcClient.newBuilder(channel);

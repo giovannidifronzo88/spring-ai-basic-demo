@@ -1,6 +1,7 @@
 package com.test.spring.ai.springaibasicdemo.service;
 
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
@@ -43,7 +44,7 @@ public class CcnlDocumentIngestionService implements DocumentIngestionService {
         }
         String text;
 
-        try (var pdf = Loader.loadPDF(resource.getInputStream().readAllBytes())) {
+        try (PDDocument pdf = Loader.loadPDF(resource.getInputStream().readAllBytes())) {
             PDFTextStripper stripper = new PDFTextStripper();
             text = stripper.getText(pdf);
         }
@@ -52,10 +53,9 @@ public class CcnlDocumentIngestionService implements DocumentIngestionService {
             throw new IllegalStateException("Il PDF non contiene testo estraibile.");
         }
 
-        List<Document> chunks = TokenTextSplitter.builder()
-                .build().apply(
-                List.of(new Document(text, Map.of("source", classpathLocation)))
-        );
+        TokenTextSplitter splitter = TokenTextSplitter.builder().build();
+        List<Document> pageDocuments = List.of(new Document(text, Map.of("source", classpathLocation)));
+        List<Document> chunks = splitter.apply(pageDocuments);
 
         vectorStore.add(chunks);
     }

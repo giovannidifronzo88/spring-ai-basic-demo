@@ -65,7 +65,7 @@ public class GitTool {
             String preview = "Commit da pubblicare su " + target + ":\n" + commits + newBranchNote;
             //effettua il push solo se è arrivata la conferma dall'utente, altrimenti crea una richiesta di approvazione
             // per far eseguire il push il prossimo prompt.
-            return gate.execute(toolContext, GitOperation.PUSH.key(branch), preview, () -> executePush(branch, published));
+            return gate.execute(toolContext, GitOperation.PUSH.key(branch), preview, () -> publishBranch(branch, published));
         } catch (Exception e) {
             // Log completo con stack trace: il modello riceve solo il messaggio, qui vediamo la causa reale.
             log.error("git-tool: operazione fallita: {}", e.toString(), e);
@@ -73,19 +73,19 @@ public class GitTool {
         }
     }
 
-    private String executePush(String branch, boolean hasUpstream) throws Exception {
+    private String publishBranch(String branch, boolean hasUpstream) throws Exception {
         String out = repo.push(branch, !hasUpstream);
         log.info("git-tool: push completato su origin/{}", branch);
         return out.isBlank() ? "Push completato." : out;
     }
 
-    private String executeCreateBranch(String branchName, String baseBranch) throws Exception {
+    private String createLocalBranch(String branchName, String baseBranch) throws Exception {
         String out = repo.createBranchFrom(branchName, baseBranch);
         log.info("git-tool: branch '{}' creato da '{}'", branchName, baseBranch);
         return out.isBlank() ? "Branch '" + branchName + "' creato da '" + baseBranch + "' e selezionato." : out;
     }
 
-    private String executeMerge(String sourceBranch, String targetBranch) throws Exception {
+    private String mergeIntoTarget(String sourceBranch, String targetBranch) throws Exception {
         String current = repo.currentBranch();
         if (!targetBranch.equals(current)) {
             repo.switchTo(targetBranch);
@@ -129,7 +129,7 @@ public class GitTool {
             String preview = "Verrebbe creato il branch '" + branchName + "' a partire da '" + baseBranch + "' e selezionato.";
             // Se il branch esiste già, git restituisce un errore esplicito che arriva al modello.
             return gate.execute(toolContext, GitOperation.CREATE_BRANCH.key(branchName, baseBranch), preview,
-                    () -> executeCreateBranch(branchName, baseBranch));
+                    () -> createLocalBranch(branchName, baseBranch));
         } catch (Exception e) {
             log.error("git-tool: creazione branch fallita: {}", e.toString(), e);
             return "Errore: " + e.getMessage();
@@ -175,7 +175,7 @@ public class GitTool {
 
             String preview = "Commit da integrare da '" + sourceBranch + "' in '" + targetBranch + "':\n" + incoming;
             return gate.execute(toolContext, GitOperation.MERGE_BRANCH.key(sourceBranch, targetBranch), preview,
-                    () -> executeMerge(sourceBranch, targetBranch));
+                    () -> mergeIntoTarget(sourceBranch, targetBranch));
         } catch (Exception e) {
             log.error("git-tool: merge fallito: {}", e.toString(), e);
             return "Errore: " + e.getMessage();

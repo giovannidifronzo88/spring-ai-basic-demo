@@ -17,9 +17,9 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/mcp")
-public class McpComtroller {
+public class McpController {
 
-    private static final Logger log = LoggerFactory.getLogger(McpComtroller.class);
+    private static final Logger log = LoggerFactory.getLogger(McpController.class);
 
     private final ChatClient chatClient;
     private final ToolCallbackProvider mcpTools;
@@ -27,7 +27,7 @@ public class McpComtroller {
     private final ObjectProvider<GitTool> gitTool;
 
 
-    public McpComtroller(ChatClient chatClient,
+    public McpController(ChatClient chatClient,
                          ToolCallbackProvider mcpTools,
                          ChatMemory chatMemory,
                          ObjectProvider<GitTool> gitTool) {
@@ -57,6 +57,7 @@ public class McpComtroller {
         // Il tool git è attivo solo con il profilo "git-tool". Gli header HTTP non vengono verificati qui:
         // vengono copiati nel ToolContext, che il framework passa al tool quando il modello lo invoca.
         if (gitToolActive) {
+            //aggiunta del tool git al chat client, in modo che il modello possa invocarlo se necessario
             spec.tools(gitTool.getObject());
             // chatId lega l'approvazione alla chat; X-Git-Approval è l'ID che la UI rimanda solo al click di conferma.
             spec.toolContext(Map.of(

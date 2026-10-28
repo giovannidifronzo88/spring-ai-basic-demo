@@ -11,8 +11,8 @@ import reactor.core.publisher.Flux;
 @RequestMapping("/api")
 public class SimpleController {
 
-    public final ChatClient chatClient;
-    public final ChatMemory chatMemory;
+    private final ChatClient chatClient;
+    private final ChatMemory chatMemory;
 
     public SimpleController(ChatClient chatClient, ChatMemory chatMemory) {
         this.chatClient = chatClient;
@@ -20,7 +20,7 @@ public class SimpleController {
     }
 
     @GetMapping("/openai")
-    public String testOpenAi() {
+    public String openAiConnectionStatus() {
         try {
             String risposta = chatClient.prompt()
                     .user("Rispondi solo con la parola 'OK' se mi senti.")
