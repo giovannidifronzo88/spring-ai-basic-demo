@@ -3,6 +3,7 @@ package com.test.spring.ai.springaibasicdemo.controller;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.ResponseEntity;
@@ -12,14 +13,19 @@ import com.test.tool.GitTool;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/mcp")
 public class McpController {
 
     private static final Logger log = LoggerFactory.getLogger(McpController.class);
+
+    private static final Set<String> TRAVEL_TOOL_NAMES = Set.of("travelCost", "itineraryPlanner");
 
     private final ChatClient chatClient;
     private final ToolCallbackProvider mcpTools;
@@ -80,6 +86,29 @@ public class McpController {
             log.error("answer: chiamata al modello fallita, chatId={}", chatId, e);
             throw e;
         }
+    }
+
+    @GetMapping("/travel-cost/estimate")
+    public ResponseEntity<String> prompt(@RequestParam("prompt") String prompt,
+                                         @RequestHeader(value = "chatId", required = true) String chatId){
+
+        ToolCallback[] selectedTool =
+                Arrays.stream(mcpTools.getToolCallbacks())
+                        .filter(tool -> TRAVEL_TOOL_NAMES.contains(tool.getToolDefinition().name()))
+                        .toArray(ToolCallback[]::new);
+
+        String answer = chatClient.prompt().
+        system("""
+                Se la risposta sul viaggio non continiene il costo del volo e dell'hotel, rispondi con il costo che sei riuscito a stimare, 
+                informando quali dei due sei riuscito a ricavare e quale no. Se non sei riuscito a ricavare nessuno dei due, 
+                rispondi che non sei riuscito a stimare il costo del viaggio.""")
+                .advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, chatId))
+                .tools((Object) selectedTool)
+                .user(prompt)
+                .call()
+                .content();
+        return ResponseEntity.ok(answer);
     }
 }
 

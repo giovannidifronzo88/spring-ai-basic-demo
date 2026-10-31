@@ -35,6 +35,7 @@ public class GitTool {
     }
 
     @Tool(description = "Prepara la pubblicazione su origin dei commit locali non ancora pushati, sul branch corrente. " +
+            "Usarlo solo se l'utente chiede esplicitamente di pubblicare; per domande informative usare gitStatus. " +
             "Restituisce solo l'anteprima: la pubblicazione avviene solo dopo la conferma dell'utente nell'interfaccia.")
     public String gitPushIfNeeded(ToolContext toolContext) {
         if (!guard.isAuthorized(toolContext)) {
@@ -50,10 +51,7 @@ public class GitTool {
             }
 
             boolean published = repo.hasUpstream();
-            // Senza upstream il branch non è mai stato pubblicato: i commit da pubblicare sono quelli non presenti su nessun remote.
-            String pending = published
-                    ? repo.logOneline("@{u}..HEAD")
-                    : repo.logOneline("HEAD", "--not", "--remotes");
+            String pending = pendingCommits(published);
             if (published && pending.isEmpty()) {
                 log.info("git-tool: nessun commit da pushare sul branch {}", branch);
                 return "Nessun commit locale da pushare.";
@@ -71,6 +69,13 @@ public class GitTool {
             log.error("git-tool: operazione fallita: {}", e.toString(), e);
             return "Errore: " + e.getMessage();
         }
+    }
+
+    // Senza upstream il branch non è mai stato pubblicato: i commit da pubblicare sono quelli non presenti su nessun remote.
+    private String pendingCommits(boolean hasUpstream) throws Exception {
+        return hasUpstream
+                ? repo.logOneline("@{u}..HEAD")
+                : repo.logOneline("HEAD", "--not", "--remotes");
     }
 
     private String publishBranch(String branch, boolean hasUpstream) throws Exception {
@@ -103,6 +108,7 @@ public class GitTool {
     }
 
     @Tool(description = "Prepara la creazione di un nuovo branch locale a partire da un branch locale di base indicato esplicitamente. " +
+            "Usarlo solo se l'utente chiede esplicitamente di creare il branch; per domande informative usare gitStatus. " +
             "Restituisce solo l'anteprima: la creazione avviene solo dopo la conferma dell'utente nell'interfaccia.")
     public String gitCreateBranch(
             @ToolParam(description = "Nome del nuovo branch da creare (lettere, cifre, '.', '_', '/', '-').")
@@ -137,6 +143,7 @@ public class GitTool {
     }
 
     @Tool(description = "Prepara il merge di un branch locale sorgente nel branch locale di destinazione indicati esplicitamente. " +
+            "Usarlo solo se l'utente chiede esplicitamente di eseguire il merge; per domande informative usare gitStatus. " +
             "Non procede se ci sono modifiche non committate; in caso di conflitto annulla il merge. " +
             "Restituisce solo l'anteprima dei commit: il merge avviene solo dopo la conferma dell'utente nell'interfaccia.")
     public String gitMergeBranch(
@@ -180,6 +187,35 @@ public class GitTool {
             log.error("git-tool: merge fallito: {}", e.toString(), e);
             return "Errore: " + e.getMessage();
         }
+    }
+
+    @Tool(description = "Mostra in sola lettura lo stato del repository: branch corrente, commit locali non ancora pushati e modifiche non committate. " +
+            "Usarlo per rispondere a domande su branch, commit o modifiche. Non prepara né esegue alcuna operazione.")
+    public String gitStatus(ToolContext toolContext) {
+        if (!guard.isAuthorized(toolContext)) {
+            return TOKEN_ERROR;
+        }
+        log.info("git-tool: richiesta stato repository");
+        try {
+            String branch = repo.currentBranch();
+            if (!GitBranchNames.matchesSafePattern(branch)) {
+                return "Branch non valido: " + branch;
+            }
+            boolean published = repo.hasUpstream();
+            String pending = pendingCommits(published);
+            String dirty = repo.statusPorcelain();
+            return formatStatus(branch, published, pending, dirty);
+        } catch (Exception e) {
+            log.error("git-tool: lettura stato fallita: {}", e.toString(), e);
+            return "Errore: " + e.getMessage();
+        }
+    }
+
+    private String formatStatus(String branch, boolean published, String pending, String dirty) {
+        String upstream = published ? "tracciato su origin/" + branch : "non ancora pubblicato su origin";
+        String commits = pending.isEmpty() ? "nessun commit locale da pushare" : "commit da pushare:\n" + pending;
+        String changes = dirty.isEmpty() ? "nessuna modifica non committata" : "modifiche non committate:\n" + dirty;
+        return "Branch corrente: " + branch + " (" + upstream + ")\n" + commits + "\n" + changes;
     }
 
     // Usato dal controller per esporre l'ID alla UI (non al modello).
