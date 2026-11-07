@@ -33,7 +33,7 @@ public class SimpleController {
     }
 
     @GetMapping("/answer")
-    public String prompt(@RequestParam("prompt") String prompt, @RequestParam(value = "chatId", required = false) String chatId){
+    public String prompt(@RequestParam("prompt") String prompt, @RequestHeader(value = "chatId", required = false) String chatId){
 
         return chatClient.prompt()
                 .advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
