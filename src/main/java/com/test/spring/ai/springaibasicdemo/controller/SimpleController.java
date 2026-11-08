@@ -33,7 +33,7 @@ public class SimpleController {
     }
 
     @GetMapping("/answer")
-    public String prompt(@RequestParam("prompt") String prompt, @RequestHeader(value = "chatId", required = false) String chatId){
+    public String prompt(@RequestParam("prompt") String prompt, @RequestHeader(value = "chatId", required = true) String chatId){
 
         return chatClient.prompt()
                 .advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
@@ -46,12 +46,12 @@ public class SimpleController {
     }
 
     @GetMapping("/stream")
-    public Flux<String> stream(@RequestParam("prompt") String prompt) {
+    public Flux<String> stream(@RequestParam("prompt") String prompt, @RequestHeader(value = "chatId", required = true) String chatId) {
 
         return chatClient.prompt()
                 .advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .user(prompt)
-                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, "my-conversation"))
+                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, chatId))
                 .stream()
                 .content();
 

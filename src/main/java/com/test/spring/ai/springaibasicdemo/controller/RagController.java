@@ -73,7 +73,7 @@ public class RagController {
     public String prompt(
             @RequestParam("collection") String collection,
             @RequestParam("prompt") String prompt,
-            @RequestHeader(value = "chatId", required = false) String chatId) {
+            @RequestHeader(value = "chatId", required = true) String chatId) {
 
 
         VectorStore store = vectorStoreResolver.resolve(CollectionType.valueOf(collection));
